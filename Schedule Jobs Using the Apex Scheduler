@@ -1,0 +1,38 @@
+Apex class:
+Name: DailyLeadProcessor
+public class DailyLeadProcessor implements Schedulable {
+    public void execute(SchedulableContext ctx) {
+     List<Lead> leads = [SELECT Id, LeadSource FROM Lead WHERE LeadSource = null  LIMIT 200 ];
+        for(Lead l : leads){
+           l.LeadSource = 'Dreamforce';
+        }
+            update leads;
+               }
+}
+
+ Apex test class:
+Name: DailyLeadProcessorTest
+@isTest
+public class DailyLeadProcessorTest{
+        private static String CRON_EXP = '0 0 0 ? * * *' ;
+  
+@isTest
+ private static void testScheduledClass() {
+     List<Lead>leads = new List<Lead>();
+     for(integer i =0;i<500;i++){
+         if(i<250){
+             leads.add(new Lead(LastName ='x',Company = 'Salesforce'));
+         }else{
+             leads.add(new Lead(LastName = 'x',Company ='Salesforce',LeadSource= 'Other'));
+      }
+         insert leads;
+         Test.startTest();
+         string jobId = System.schedule('Process Leads',CRON_EXP ,new DailyLeadProcessor());
+         Test.stopTest();
+         List<Lead> updatedLeads = [SELECT Id,LeadSOurce FROM Lead WHERE LeadSource ='Dreamforce'];
+         System.assertEquals(200,updatedLeads.size(),'error');
+ List<CronTrigger> cts=[SELECT Id,TimesTriggered,NextFireTime FROM CronTrigger WHERE Id = :jobId ];
+         System.debug('NextFiretime'+cts[0].NextFireTime);
+         }
+ }
+}
