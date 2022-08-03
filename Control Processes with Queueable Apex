@@ -1,0 +1,49 @@
+Apex class:
+Name: AddPrimaryContact
+public class AddPrimaryContact   implements Queueable {
+   private Contact contact;
+    private string state;
+   
+    public  AddPrimaryContact(Contact inputcontact,string inputstate){
+      this.contact = inputcontact;
+        this.state= inputstate;
+    }  
+    public void execute(QueueableContext context) {
+   List<Account> accounts = [select id from account where billingstate = :state LIMIT 200];
+  List<Contact> contacts = new List<Contact>();     
+for (Account acc : accounts) {
+    Contact contactClone = contact.Clone();
+    contactClone.Accountid = acc.Id;
+    contacts.add(contactClone);
+    } 
+    insert contacts;
+    }
+}
+
+Apex test class:
+Name: AddPrimaryContactTest
+@isTest
+private class AddPrimaryContactTest {
+  @isTest
+    private static void testQueueableclass(){
+    List<Account> accounts = new List<Account>();
+
+        for(integer i=0;i<400;i++){
+    Account acc = new Account(Name= 'test acc ');
+            if(i<200){
+    acc.BillingState ='NY';
+            }else{
+        acc.BillingState='CA';
+        }
+            accounts.add(acc);
+   }
+insert accounts;
+   Contact contact = new Contact(FirstName= 'x',LastName='y');
+insert contact;
+Test.startTest();
+Id jobid = System.enqueueJob(new AddPrimaryContact(contact,'CA'));
+Test.stopTest();
+List<Contact> contacts =[SELECT id from Contact WHERE Contact.Account.BillingState = 'CA'];
+System.assertEquals(200,contacts.size(),'Error');
+  }
+}
