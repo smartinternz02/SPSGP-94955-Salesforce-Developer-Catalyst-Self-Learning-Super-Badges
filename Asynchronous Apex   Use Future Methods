@@ -1,0 +1,39 @@
+Class
+public class AccountProcessor {
+    @future
+    public static void countContacts(List<Id> accountsIds){
+      List<Account> accounts = [Select Id, (Select Id from Contacts) from Account Where Id IN :accountsIds];
+        for (Account acc:accounts){
+            acc.Number_Of_Contacts__c=acc.Contacts.size();
+        } 
+        update accounts;
+    }
+        }
+
+Test on class
+@isTest
+public class AccountProcessorTest {
+    public static testmethod void testaccpro(){
+     List<Account>accounts= new list<Account>();
+        for(integer i=0;i<10;i++){
+            accounts.add(new Account(Name='Test account'+i));
+        }
+            insert Accounts;
+        List<contact>contacts= new List<contact>();
+List<Id>accountsIds=new LIST<Id>();
+        for(Account acc:accounts){
+            contacts.add(new contact(FirstName=acc.Name,LastName='TestContact',AccountId=acc.Id));
+            accountsIds.add(acc.Id);
+               }   
+        insert contacts;
+    Test.startTest();
+        AccountProcessor.countContacts(accountsIds);
+        
+        Test.stopTest();
+         List<Account> accs = [Select Id, Number_Of_Contacts__c from Account ];
+        for (Account acc:accs){
+            System.assertEquals(1,acc.Number_Of_Contacts__c, 'incorrect');
+        }
+     }
+    }
+
