@@ -1,0 +1,37 @@
+Apex class
+Name: AccountManager
+@RestResource(urlMapping='/Accounts/*/contacts')
+global with sharing class AccountManager {
+    @HttpGet
+    global static Account getAccount() {
+        RestRequest request = RestContext.request;
+       
+        String accountId = request.requestURI.substringBetween('/Accounts/','/contacts')
+         ;
+      Account result =  [SELECT Id,Name,(SELECT ID,FirstName,LastName FROM Contacts)
+                        FROM Account
+                        WHERE Id = :accountId];
+       return result;
+    }
+}
+
+Apex class  AccountManagerTest
+@IsTest
+private class AccountManagerTest {
+    @isTest 
+    static void testGetAccount() {
+        Account a = new Account(Name='TestAccount');
+        insert a;
+        Contact c = new Contact(AccountId=a.Id,FirstName ='Test',LastName='Test' );
+        insert c;
+        RestRequest request = new RestRequest();
+        request.requestUri ='https://yourInstance.salesforce.com/services/apexrest/Accounts/'+a.Id+'/contacts'; 
+        request.httpMethod = 'GET';
+        RestContext.request = request;
+        // Call the method to test
+       Account myacc = AccountManager.getAccount();
+        // Verify results//
+         System.assert(myacc != null);
+        System.assertEquals('TestAccount',myacc.Name);
+    }
+    }
